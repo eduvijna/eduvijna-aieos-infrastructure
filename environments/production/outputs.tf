@@ -24,7 +24,7 @@ output "foundation_status" {
     vpc_name_intended       = var.vpc_name
     vpc_cidr_candidate      = var.vpc_ip_range
     legacy_state_bucket     = "eduvijna-terraform-state"
-    production_state_bucket = "eduvijna-aieos-tofu-state-prod-blr1"
+    production_state_bucket = "eduvijna-aieos-tofu-state-prod-sfo3"
   }
 }
 
