@@ -1,9 +1,12 @@
 output "foundation_status" {
   description = "Human-readable foundation posture."
   value = {
-    cloud_resources_enabled      = var.enable_cloud_resources
-    production_state_initialized = false
-    apply_authorized             = false
+    cloud_resources_enabled = var.enable_cloud_resources
+    # TRUE = authorized production remote S3 backend initialization gate completed.
+    # TRUE does NOT mean remote tfstate exists, apply occurred, or workload resources exist.
+    production_state_initialized         = true
+    production_remote_state_materialized = false
+    apply_authorized                     = false
     app_platform = {
       region              = local.app_platform_region
       vpc_datacenter      = local.app_platform_vpc_datacenter

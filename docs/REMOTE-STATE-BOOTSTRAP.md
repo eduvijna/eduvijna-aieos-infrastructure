@@ -1,19 +1,27 @@
 # Remote State — Bootstrap
 
-## Production remote-state authority (intended)
+## Production remote-state authority (current)
 
 | Setting | Value |
 | --- | --- |
 | Backend | OpenTofu `s3` |
 | Object store | DigitalOcean Spaces **Standard** |
 | Bucket | `eduvijna-aieos-tofu-state-prod-sfo3` |
-| Region | SFO3 (validate at creation gate) |
+| Bucket posture | **EXISTS / PRIVATE** |
+| Region | **SFO3** |
 | Endpoint | `https://sfo3.digitaloceanspaces.com` |
 | Locking | native `use_lockfile = true` |
-| Versioning | **ON** (required) |
+| Versioning | **ENABLED** |
 | CDN | OFF / unused |
 | Public access | **FORBIDDEN** |
-| Credential | dedicated Spaces key restricted to this state bucket |
+| Permanent credential | **ESTABLISHED** / bucket-scoped `readwrite` / outside Git |
+| Stage 1 | **PASS / FORMALLY CLOSED** |
+| Stage 2 | **PASS / FORMALLY CLOSED** |
+| Production backend | **INITIALIZED** |
+| Remote tfstate object | **ABSENT / NOT MATERIALIZED** |
+| Persistent lock object | **ABSENT** |
+| `tofu plan` | **NOT AUTHORIZED** |
+| `tofu apply` | **NOT AUTHORIZED** |
 
 ### Workload vs control-plane location
 
@@ -38,11 +46,16 @@ Do **not** use:
 
 ## Partial backend configuration
 
-`environments/production/backend.tf` is intentionally partial and non-secret.
+`environments/production/backend.tf` is intentionally **PARTIAL / NON-SECRET**.
 CI runs `tofu init -backend=false`.
 
-Production `tofu init` that configures remote state is a **later authorized
-gate** after bucket/key creation — not part of this foundation.
+Stage 2 initialized an authorized operator working directory using external
+non-secret backend configuration plus process-local credential loading.
+Credentials and executable backend parameters are **not** embedded in source.
+
+A clean or future production operator workspace does **not** inherit Stage 2
+authorization automatically; fresh production backend initialization still
+requires an explicit Chief Architect execution gate.
 
 ## Namespace collision hold
 
@@ -67,17 +80,13 @@ against it. Any later disposition requires separate Chief Architect authority
 It was never successfully created. It is **not** current state authority. No
 deletion is required.
 
-## Stage 1 status
+## Stage 1 / Stage 2 status
 
-Stage 1 production-state bootstrap remains **SUSPENDED**.
+- **Stage 1** production-state bucket bootstrap: **PASS / FORMALLY CLOSED**
+- **Stage 2** production remote-backend initialization: **PASS / FORMALLY CLOSED**
 
-ADR-AIEOS-044R2 architecture has been merged and verified. Presence of this
-document does **not** resume Stage 1 or authorize bucket creation.
-
-Release now requires:
-
-1. this SFO3 infrastructure reconciliation PR merged and post-merge verified;
-2. a fresh exact-source Chief Architect Stage 1 **SFO3** execution authorization.
+Remote tfstate remains **NOT MATERIALIZED**. Persistent lock object remains
+**ABSENT**. `tofu plan` / `tofu apply` remain **NOT AUTHORIZED**.
 
 ## Legacy bucket
 
