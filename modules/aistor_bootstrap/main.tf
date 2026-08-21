@@ -83,9 +83,9 @@ output "volume_ids" {
   value = { for k, v in digitalocean_volume.data : k => v.id }
 }
 
-output "volume_filesystem_uuids" {
-  description = "Prefer filesystem UUID for durable mount authority (populated after format/attach)."
-  value       = { for k, v in digitalocean_volume.data : k => v.filesystem_uuid }
+output "volume_filesystem_types" {
+  description = "Declared/initial filesystem type for Volumes (XFS). Durable mount authority uses OS-level filesystem UUID after format — never /dev/sdX."
+  value       = { for k, v in digitalocean_volume.data : k => v.filesystem_type }
 }
 
 output "mount_convention" {

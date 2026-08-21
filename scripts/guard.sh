@@ -26,11 +26,11 @@ if find . -type f -name '*.auto.tfvars' ! -name '*.example' ! -path './.git/*' |
   fail "committed *.auto.tfvars is forbidden"
 fi
 
-# Disallow apply in CI scripts/workflows
+# Disallow apply/destroy in CI scripts/workflows
 if grep -RInE --include='*.yml' --include='*.yaml' --include='*.sh' \
   --exclude-dir='.git' \
-  'tofu[[:space:]]+apply|terraform[[:space:]]+apply' .; then
-  fail "apply commands are forbidden in CI/scripts"
+  'tofu[[:space:]]+(apply|destroy)|terraform[[:space:]]+(apply|destroy)' .; then
+  fail "apply/destroy commands are forbidden in CI/scripts"
 fi
 
 # Disallow production remote init without -backend=false in CI

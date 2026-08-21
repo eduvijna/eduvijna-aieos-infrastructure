@@ -29,7 +29,8 @@ variable "admin_port" {
 resource "digitalocean_firewall" "aistor" {
   name        = var.name
   droplet_ids = var.droplet_ids
-  tags        = var.tags
+  # Do NOT attach shared production tags here — DigitalOcean unions droplet_ids
+  # with every droplet carrying those tags.
 
   # Normal S3: private sources only.
   dynamic "inbound_rule" {

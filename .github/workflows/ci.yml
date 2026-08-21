@@ -26,7 +26,8 @@ jobs:
       - name: Prove exact OpenTofu version
         run: |
           tofu version
-          tofu version -json | grep -q '"terraform_version":"1.12.5"'
+          ver="$(tofu version -json | python3 -c 'import json,sys; print(json.load(sys.stdin)["terraform_version"])')"
+          test "$ver" = "1.12.5"
 
       - name: Secret / apply / local-state guards
         working-directory: .
@@ -45,8 +46,8 @@ jobs:
       - name: Prove enable_cloud_resources remains false by default
         working-directory: .
         run: |
-          grep -A2 'variable "enable_cloud_resources"' environments/production/variables.tf \
-            | grep -q 'default.*=.*false'
+          awk '/variable "enable_cloud_resources"/,/^}/' environments/production/variables.tf \
+            | grep -E '^\s*default\s*=\s*false\s*$'
 
       - name: Prove lockfile pins DigitalOcean 2.99.1
         working-directory: .
