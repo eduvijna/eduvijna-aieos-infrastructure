@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+fail() { echo "GUARD_FAIL: $*" >&2; exit 1; }
+
+# Forbidden production local-state authority
+if find . -type f \( -name '*.tfstate' -o -name '*.tfstate.*' \) \
+  ! -path './.git/*' | grep -q .; then
+  fail "tfstate files must not exist in the repository tree"
+fi
+
+# Hard-coded credential-ish assignments in .tf (allow comments/docs)
+if grep -RInE \
+  --include='*.tf' --include='*.tfvars' --include='*.hcl' \
+  --exclude-dir='.git' --exclude-dir='.terraform' \
+  '(token\s*=\s*"[^$]|access_key\s*=\s*"[^$]|secret_key\s*=\s*"[^$]|DIGITALOCEAN_TOKEN\s*=\s*"[^$]|private_key\s*=\s*"-----BEGIN)' \
+  .; then
+  fail "possible plaintext credential assignment in OpenTofu files"
+fi
+
+# Disallow committed auto.tfvars (except examples)
+if find . -type f -name '*.auto.tfvars' ! -name '*.example' ! -path './.git/*' | grep -q .; then
+  fail "committed *.auto.tfvars is forbidden"
+fi
+
+# Disallow apply in CI scripts/workflows
+if grep -RInE --include='*.yml' --include='*.yaml' --include='*.sh' \
+  --exclude-dir='.git' \
+  'tofu[[:space:]]+apply|terraform[[:space:]]+apply' .; then
+  fail "apply commands are forbidden in CI/scripts"
+fi
+
+# Disallow production remote init without -backend=false in CI
+if grep -RIn --include='*.yml' --include='*.yaml' --exclude-dir='.git' 'tofu init' .github \
+  | grep -v '\-backend=false' | grep -q .; then
+  fail "CI tofu init must use -backend=false"
+fi
+
+echo "GUARD_OK"

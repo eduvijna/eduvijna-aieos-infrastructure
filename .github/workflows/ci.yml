@@ -1,0 +1,62 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  opentofu-validate:
+    name: opentofu-validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: environments/production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.12.5
+
+      - name: Prove exact OpenTofu version
+        run: |
+          tofu version
+          tofu version -json | grep -q '"terraform_version":"1.12.5"'
+
+      - name: Secret / apply / local-state guards
+        working-directory: .
+        run: bash scripts/guard.sh
+
+      - name: Format check
+        working-directory: .
+        run: tofu fmt -check -recursive
+
+      - name: Init without backend (no production state)
+        run: tofu init -backend=false -input=false
+
+      - name: Validate
+        run: tofu validate
+
+      - name: Prove enable_cloud_resources remains false by default
+        working-directory: .
+        run: |
+          grep -A2 'variable "enable_cloud_resources"' environments/production/variables.tf \
+            | grep -q 'default.*=.*false'
+
+      - name: Prove lockfile pins DigitalOcean 2.99.1
+        working-directory: .
+        run: |
+          test -f environments/production/.terraform.lock.hcl
+          grep -q 'version.*=.*"2.99.1"' environments/production/.terraform.lock.hcl
+
+      - name: Prove CI has no DigitalOcean token
+        run: |
+          if [ -n "${DIGITALOCEAN_TOKEN:-}" ]; then
+            echo "DIGITALOCEAN_TOKEN must not be present in foundation CI" >&2
+            exit 1
+          fi
