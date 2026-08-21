@@ -5,7 +5,7 @@ it appears here. Each requires explicit Chief Architect (and commercial)
 authorization.
 
 1. **Commercial recheck** — full estate + apply-set pricing vs ≤240 / hard 250; GST basis clarified.
-2. **State bucket/key creation** — `eduvijna-aieos-tofu-state-prod`, Versioning ON, dedicated Spaces key.
+2. **State bucket/key creation** — `eduvijna-aieos-tofu-state-prod-blr1`, Versioning ON, dedicated Spaces key.
 3. **Remote-state validation** — authorized `tofu init` with partial backend + `use_lockfile=true`; no apply yet.
 4. **Production project/VPC** — use existing AIEOS project; create `aieos-prod-blr1` after CIDR collision proof (not `default-blr1`).
 5. **AIStor compute + Volumes** — `aieos-prod-aistor-01` + six NEW 190 GiB XFS volumes; never reuse DOKS.
