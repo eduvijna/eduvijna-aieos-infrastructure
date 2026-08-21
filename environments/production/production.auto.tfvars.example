@@ -1,0 +1,10 @@
+# EXAMPLE ONLY — copy to production.auto.tfvars locally; never commit real values.
+# production.auto.tfvars is gitignored.
+
+do_project_id = "REPLACE_WITH_EXISTING_AIEOS_PROJECT_ID"
+
+# Candidate CIDR only — collision proof required before apply.
+vpc_ip_range = "10.130.0.0/20"
+
+# HARD GUARD — remain false until Chief Architect authorizes production apply.
+enable_cloud_resources = false

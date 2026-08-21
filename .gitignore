@@ -1,7 +1,41 @@
-﻿.terraform/
+# Local / editor
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# OpenTofu / Terraform local artifacts (never production authority)
+.terraform/
+**/.terraform/
 *.tfstate
 *.tfstate.*
-*.auto.tfvars
-!.auto.tfvars.example
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Secrets and credentials (never commit)
+*.pem
+*.key
+*.p12
+*.pfx
 .env
 .env.*
+!.env.example
+*.auto.tfvars
+!*.auto.tfvars.example
+*.tfvars
+!*.tfvars.example
+!*.auto.tfvars.example
+*.tfvars.json
+secrets/
+credentials/
+*.secret
+*id_rsa*
+minio.license
+
+# Provider caches
+.terraform.lock.hcl.bak
