@@ -12,11 +12,14 @@ definitions do **not** live in `eduvijna-aieos-backend` or
 
 | Concern | Status |
 | --- | --- |
-| Architecture frozen | Yes (ADR-AIEOS-037/038R1/039/040R1/041/041R1/042/043) |
+| Architecture frozen | Yes (ADR-AIEOS-037/038R1/039/040R1/041/041R1/042/043/044/044R1/044R2) |
 | Implementation modeled | Yes (Bootstrap AIStor + VPC/project/network) |
-| Production remote state initialized | **No** |
-| Cloud resources created | **No** |
-| Credentials created | **No** |
+| Production state bucket bootstrap | **COMPLETE** (`eduvijna-aieos-tofu-state-prod-sfo3` / SFO3) |
+| Production remote backend initialized | **Yes** (Stage 2; operator workspace) |
+| Production remote state materialized | **No** |
+| Production workload cloud resources created | **No** |
+| Permanent production state credential established | **Yes** (bucket-scoped `readwrite`; outside Git) |
+| Production workload credentials activated | **No** |
 | Production deployed | **No** |
 | PED-I03 activated | **No** |
 | OpenTofu apply authorized | **No** |
@@ -40,25 +43,30 @@ docs/                      # baseline, state, secrets, runbook
 
 - No DigitalOcean resource mutation from CI or local convenience
 - No `tofu apply` against production without Chief Architect authorization
-- No production `tofu init` that configures remote state until the state
-  bucket/key creation gate
+- Stage 2 production backend initialization completed in the authorized
+  operator workspace. Any new/reconfigured production backend initialization
+  in a clean or different workspace still requires an explicit Chief Architect
+  execution gate.
 - No secrets in Git, `.tfvars`, plans, or documentation
 - No reuse of DOKS / default VPC / legacy Spaces as AIStor production
 
 ## Commercial envelope (guardrails)
 
-Discovered preflight estimates (list USD, pre-tax, 2026-08-21):
+Historical foundation-slice planning values (list USD, pre-tax, 2026-08-21;
+**not** current complete-estate commercial authority):
 
 - Retained DO estate ≈ USD 79.90/mo
 - AIStor node = USD 24/mo
 - Six × 190 GiB Volumes = USD 114/mo
 - AIStor-slice projected total ≈ USD 217.90/mo
 
-**This is not the final full AIEOS production commercial total.** App Platform
-and Managed PostgreSQL are required by architecture and are not yet present.
+Binding complete-estate planning evidence under ADR-AIEOS-044 is approximately
+**USD 294.05/month pre-tax — RED**. Full production compute remains commercially
+blocked.
 
-Target ≤ USD 240/month. Hard ceiling USD 250/month. GST/tax basis pending
-Founder clarification.
+Target ≤ USD 240/month service-charge operating target. Hard ceiling
+USD 250/month. GST/statutory taxes (including Indian GST) are tracked separately
+and do **not** consume the USD 250 DigitalOcean service-charge ceiling.
 
 No apply may proceed without a pre-apply commercial calculation covering every
 resource in that apply plus retained estate.

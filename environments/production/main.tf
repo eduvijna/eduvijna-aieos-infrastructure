@@ -8,13 +8,15 @@ locals {
   app_platform_dedicated_egress = false
 
   # Commercial guardrails (list USD, pre-tax, discovered 2026-08-21). Not final full-estate total.
-  commercial_retained_usd_mo        = 79.90
-  commercial_aistor_node_usd_mo     = 24.00
-  commercial_aistor_volumes_usd_mo  = 114.00
-  commercial_aistor_slice_usd_mo    = 217.90
-  commercial_target_usd_mo          = 240.00
-  commercial_hard_ceiling_usd_mo    = 250.00
-  commercial_gst_basis              = "PENDING_FOUNDER_CLARIFICATION"
+  commercial_retained_usd_mo       = 79.90
+  commercial_aistor_node_usd_mo    = 24.00
+  commercial_aistor_volumes_usd_mo = 114.00
+  commercial_aistor_slice_usd_mo   = 217.90
+  commercial_target_usd_mo         = 240.00
+  commercial_hard_ceiling_usd_mo   = 250.00
+  # Statutory taxes including Indian GST are tracked separately and do not
+  # consume the USD 250 DigitalOcean service-charge ceiling (ADR-AIEOS-044).
+  commercial_gst_basis              = "STATUTORY_TAXES_TRACKED_SEPARATELY"
   commercial_full_estate_incomplete = true
 }
 

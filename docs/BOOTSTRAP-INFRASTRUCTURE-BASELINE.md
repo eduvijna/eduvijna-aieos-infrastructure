@@ -13,11 +13,15 @@ Governed architecture SHAs at foundation creation:
 | --- | --- |
 | Architecture frozen | Yes |
 | Implementation modeled (OpenTofu) | Yes |
-| Production remote state initialized | **No** |
-| Cloud resources created | **No** |
-| Credentials created | **No** |
+| Production state bucket bootstrap | **COMPLETE** (`eduvijna-aieos-tofu-state-prod-sfo3` / SFO3) |
+| Production remote backend initialized | **Yes** (Stage 2) |
+| Production remote state materialized | **No** |
+| Production workload cloud resources created | **No** |
+| Permanent production state credential | **ESTABLISHED** (bucket-scoped `readwrite`; outside Git) |
+| Production workload credentials | **NOT ACTIVATED / NOT CREATED** |
 | Production deployed | **No** |
 | PED-I03 activated | **No** |
+| OpenTofu apply authorized | **No** |
 
 ## Frozen Bootstrap target (modeled)
 
@@ -48,20 +52,23 @@ egress IPs simultaneously; private AIStor connectivity is mandatory.
 
 ## Commercial guards
 
-Discovered estimates (list USD, pre-tax, 2026-08-21):
+Historical foundation-slice planning values (list USD, pre-tax, 2026-08-21;
+**not** current complete-estate commercial authority):
 
 - Retained DO estate ≈ USD 79.90/mo
 - AIStor node = USD 24/mo
 - Six × 190 GiB = USD 114/mo
 - AIStor-slice projected total ≈ USD 217.90/mo
 
-**This is not the final full AIEOS production commercial total.** Architecture
-also requires production App Platform and Managed PostgreSQL (neither currently
-exists in the account inventory used for preflight).
+Binding complete-estate planning evidence under ADR-AIEOS-044 is approximately
+**USD 294.05/month pre-tax — RED**. Full production compute remains commercially
+blocked. App Platform and Managed PostgreSQL remain required by architecture and
+are not yet present as workload resources.
 
-- Target ≤ USD 240/month
+- Target ≤ USD 240/month (DigitalOcean service-charge operating target)
 - Hard ceiling USD 250/month
-- GST/tax accounting basis: **PENDING FOUNDER CLARIFICATION**
+- Statutory taxes including Indian GST: tracked separately; do **not** consume
+  the USD 250 DigitalOcean service-charge ceiling (ADR-AIEOS-044)
 
 No OpenTofu apply may be authorized until an exact pre-apply commercial
 calculation includes every resource in that apply plus retained estate.
