@@ -80,5 +80,6 @@ output "semantics" {
     public_internet_s3    = "DENY / no rule"
     administrative_access = "separate restricted operator path"
     vpc_uuid_reference    = var.vpc_uuid
+    resource_tags_context = var.tags
   }
 }
