@@ -4,9 +4,10 @@ output "foundation_status" {
     cloud_resources_enabled = var.enable_cloud_resources
     # TRUE = authorized production remote S3 backend initialization gate completed.
     # TRUE does NOT mean remote tfstate exists, apply occurred, or workload resources exist.
-    production_state_initialized         = true
-    production_remote_state_materialized = false
-    apply_authorized                     = false
+    # Production remote tfstate object existence is operational execution evidence and is
+    # intentionally not encoded in this state-backed output.
+    production_state_initialized = true
+    apply_authorized             = false
     app_platform = {
       region              = local.app_platform_region
       vpc_datacenter      = local.app_platform_vpc_datacenter
