@@ -63,3 +63,46 @@ jobs:
             echo "DIGITALOCEAN_TOKEN must not be present in foundation CI" >&2
             exit 1
           fi
+
+  postgresql-identity-bootstrap:
+    name: postgresql-identity-bootstrap
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci_bootstrap_only
+          POSTGRES_DB: aieos_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d aieos_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGDATABASE: aieos_ci
+      PGUSER: postgres
+      PGPASSWORD: ci_bootstrap_only
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Prove PostgreSQL major version 18
+        run: |
+          major="$(psql -Atqc "SELECT split_part(version(), ' ', 2)::int")"
+          test "$major" = "18"
+
+      - name: Secret / apply / local-state guards
+        run: bash scripts/guard.sh
+
+      - name: Run disposable identity bootstrap CI proof
+        run: bash scripts/postgresql/ci-test-bootstrap.sh

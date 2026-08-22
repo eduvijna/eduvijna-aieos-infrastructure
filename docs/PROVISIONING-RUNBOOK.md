@@ -24,8 +24,24 @@ production workload compute.
 | 14. Provider conformance — live PutObject SHA-256 + GetBucketLocation absence discrimination against production node | **GATED** |
 | 15. App Platform — region `blr`, VPC attach required, no dedicated egress in Bootstrap baseline | **GATED / NOT AUTHORIZED** |
 | 16. Runtime composition — only after provider conformance and commercial clearance | **GATED / NOT AUTHORIZED** |
+| 17. PostgreSQL candidate-reader bootstrap — ADR-AIEOS-045 deployment-admin role creation + `scripts/postgresql/*` | **SOURCE-DEFINED / NOT RELEASED** |
 
 Full production compute remains **COMMERCIALLY BLOCKED** (ADR-AIEOS-044 complete-estate planning evidence ≈ USD 294.05/month pre-tax — RED).
+
+## ADR-AIEOS-045 PostgreSQL candidate-reader sequence (NOT RELEASED)
+
+Production execution of this sequence requires separate Chief Architect authorization. Dispatcher daemon remains disabled.
+
+1. Establish / verify narrower deployment administration role (`aieos_db_deployment_admin` conceptually) from break-glass provider admin if not already present.
+2. Run `scripts/postgresql/bootstrap-candidate-readers.sh` as deployment admin.
+3. Run `scripts/postgresql/verify-candidate-readers.sh` (`AIEOS_VERIFY_MODE=baseline`).
+4. Run `scripts/postgresql/grant-candidate-migration-access.sh` immediately before authorized Backend Alembic migration window.
+5. Execute future Backend Alembic migration (RLS / grants / indexes / candidate functions — **not** this Infrastructure phase).
+6. Run `scripts/postgresql/revoke-candidate-migration-access.sh` (or `cleanup-candidate-migration-access.sh` after interruption).
+7. Run final `verify-candidate-readers.sh` (`baseline`).
+8. Dispatcher daemon remains **disabled** until separately authorized.
+
+See [POSTGRESQL-IDENTITY-BOOTSTRAP.md](POSTGRESQL-IDENTITY-BOOTSTRAP.md).
 
 ## Mount fail-closed requirements
 
