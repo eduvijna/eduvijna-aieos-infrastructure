@@ -15,6 +15,24 @@ committed to Git, or documentation.
 | TLS root/CA private key | AIEOS-controlled CA | In Git or OpenTofu state |
 | AIStor server private key | TLS for AIStor | In Git, `.tfvars`, cloud-init in Git, or state |
 | Runtime CA trust bundle | Future encrypted App Platform config | Public plaintext repo content |
+| Database administration credential | PostgreSQL deployment identity bootstrap / JIT membership / role verification | API runtime, migrator routine use, dispatcher, Temporal, App Platform workload |
+
+## Database administration credential (ADR-AIEOS-045)
+
+Distinct from migrator, API runtime, event dispatcher, workflow dispatcher, and Temporal worker credentials.
+
+| Property | Requirement |
+| --- | --- |
+| Purpose | Create/verify NOLOGIN candidate-reader roles; grant/revoke temporary migrator `SET` membership |
+| Typical conceptual name | `aieos_db_deployment_admin` (deployment-configurable) |
+| Provider break-glass | DigitalOcean `doadmin` is **initial/break-glass only** — not routine bootstrap identity |
+| Must not be used for | Alembic migration sessions, API requests, dispatcher loops, application SQL |
+
+Delivery: authorized deployment secret channel only. Never commit passwords, connection URIs, hostnames, or tokens to Git, OpenTofu state, or documentation.
+
+### Candidate-reader roles
+
+Event and workflow candidate-readers are **NOLOGIN** and have **NO CREDENTIAL**. No password, API key, or application secret is provisioned for them in the Infrastructure bootstrap phase.
 
 ## Ordinary runtime IAM (documentation)
 
