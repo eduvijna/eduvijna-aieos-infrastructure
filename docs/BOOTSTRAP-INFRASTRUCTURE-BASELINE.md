@@ -15,13 +15,14 @@ Governed architecture SHAs at foundation creation:
 | Implementation modeled (OpenTofu) | Yes |
 | Production state bucket bootstrap | **COMPLETE** (`eduvijna-aieos-tofu-state-prod-sfo3` / SFO3) |
 | Production remote backend initialized | **Yes** (Stage 2) |
-| Production remote state materialized | **No** |
+| Production remote state materialized | **Yes** (Stage 3B) |
+| Authoritative state | **serial 1 / zero managed resources** |
 | Production workload cloud resources created | **No** |
 | Permanent production state credential | **ESTABLISHED** (bucket-scoped `readwrite`; outside Git) |
 | Production workload credentials | **NOT ACTIVATED / NOT CREATED** |
 | Production deployed | **No** |
 | PED-I03 activated | **No** |
-| OpenTofu apply authorized | **No** |
+| Further OpenTofu apply | **NOT AUTHORIZED** |
 
 ## Frozen Bootstrap target (modeled)
 
@@ -70,8 +71,9 @@ are not yet present as workload resources.
 - Statutory taxes including Indian GST: tracked separately; do **not** consume
   the USD 250 DigitalOcean service-charge ceiling (ADR-AIEOS-044)
 
-No OpenTofu apply may be authorized until an exact pre-apply commercial
-calculation includes every resource in that apply plus retained estate.
+No billable workload OpenTofu apply may be authorized until an exact pre-apply
+commercial calculation includes every resource in that apply plus retained
+estate.
 
 ## Hard OpenTofu guard
 

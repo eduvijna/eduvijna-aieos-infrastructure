@@ -2,19 +2,19 @@
 
 Stages below are gated. Presence here does **not** authorize execution.
 Billable workload progression still requires explicit Chief Architect and
-commercial authorization. Stage 1/2 control-plane state bootstrap proceeded
-under separately authorized gates and did **not** release production workload
-compute.
+commercial authorization. Stage 1 / Stage 2 / Stage 3A / Stage 3B control-plane
+state progression was separately authorized and did **not** release billable
+production workload compute.
 
 | Gate | Status |
 | --- | --- |
 | 1. Commercial release/recheck (full estate vs ≤240 / hard 250; GST tracked separately) | **OPEN / REQUIRED** before billable workload progression |
 | 2. State bucket/key creation — `eduvijna-aieos-tofu-state-prod-sfo3` (SFO3 Spaces Standard), Versioning ON, dedicated Spaces key | **COMPLETE** (Stage 1) |
 | 3. Remote S3 backend initialization — partial backend + `use_lockfile=true` | **COMPLETE** (Stage 2) |
-| 4. Remote tfstate materialization | **NOT EXECUTED / NOT AUTHORIZED** |
-| 5. Live lock acquisition | **NOT EXECUTED** |
-| 6. `tofu plan` | **NOT AUTHORIZED** |
-| 7. `tofu apply` | **NOT AUTHORIZED** |
+| 4. Remote tfstate materialization — authoritative state serial **1** / zero managed resources | **COMPLETE** (Stage 3B) |
+| 5. Live lock acquisition/release validation — Stage 3A + Stage 3B native lock lifecycle | **COMPLETE** (current persistent lock **ABSENT**) |
+| 6. OpenTofu planning — bounded refresh-only state validation | **COMPLETE / CLOSED** (Stage 3A); normal production workload plan **NOT AUTHORIZED** |
+| 7. OpenTofu apply — bounded Stage-3B refresh-only saved-plan apply | **COMPLETE / CLOSED** (0 added / 0 changed / 0 destroyed); further production apply **NOT AUTHORIZED** |
 | 8. Production project/VPC — use existing AIEOS project; create `aieos-prod-blr1` after CIDR collision proof (not `default-blr1`) | **GATED / NOT AUTHORIZED** |
 | 9. AIStor compute + Volumes — `aieos-prod-aistor-01` + six NEW 190 GiB XFS volumes; never reuse DOKS | **GATED / NOT AUTHORIZED** |
 | 10. Device/mount proof — UUID mounts at `/srv/aistor/data0{1-6}`; fail closed if incomplete | **GATED** |

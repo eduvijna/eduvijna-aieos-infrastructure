@@ -17,11 +17,23 @@
 | Permanent credential | **ESTABLISHED** / bucket-scoped `readwrite` / outside Git |
 | Stage 1 | **PASS / FORMALLY CLOSED** |
 | Stage 2 | **PASS / FORMALLY CLOSED** |
+| Stage 3A | **PASS / FORMALLY CLOSED** |
+| Stage 3B | **PASS / FORMALLY CLOSED** |
 | Production backend | **INITIALIZED** |
-| Remote tfstate object | **ABSENT / NOT MATERIALIZED** |
-| Persistent lock object | **ABSENT** |
-| `tofu plan` | **NOT AUTHORIZED** |
-| `tofu apply` | **NOT AUTHORIZED** |
+| Remote tfstate object | **MATERIALIZED / AUTHORITATIVE** |
+| State key | `environments/production/opentofu.tfstate` |
+| Initial serial | **1** |
+| Managed resources | **0** |
+| `tofu state list` | **EMPTY** |
+| Current persistent lock object | **ABSENT** |
+| Native locking | **VALIDATED** |
+| Stage 3A bounded refresh-only plan | **EXECUTED / CLOSED** |
+| Normal workload plan | **NOT AUTHORIZED** |
+| Stage 3B exact inspected refresh-only saved-plan apply | **EXECUTED / CLOSED** |
+| Further production apply | **NOT AUTHORIZED** |
+
+Stage 3A/3B: **`DIGITALOCEAN_TOKEN` not used**; no DigitalOcean workload
+mutation occurred.
 
 ### Workload vs control-plane location
 
@@ -53,7 +65,7 @@ Stage 2 initialized an authorized operator working directory using external
 non-secret backend configuration plus process-local credential loading.
 Credentials and executable backend parameters are **not** embedded in source.
 
-A clean or future production operator workspace does **not** inherit Stage 2
+A clean or future production operator workspace does **not** inherit Stage 2/3
 authorization automatically; fresh production backend initialization still
 requires an explicit Chief Architect execution gate.
 
@@ -80,13 +92,18 @@ against it. Any later disposition requires separate Chief Architect authority
 It was never successfully created. It is **not** current state authority. No
 deletion is required.
 
-## Stage 1 / Stage 2 status
+## Stage 1 / Stage 2 / Stage 3A / Stage 3B status
 
 - **Stage 1** production-state bucket bootstrap: **PASS / FORMALLY CLOSED**
 - **Stage 2** production remote-backend initialization: **PASS / FORMALLY CLOSED**
+- **Stage 3A** bounded refresh-only plan / live-lock validation: **PASS / FORMALLY CLOSED**
+- **Stage 3B** first authoritative remote tfstate materialization (exact inspected refresh-only saved-plan apply; 0 added / 0 changed / 0 destroyed): **PASS / FORMALLY CLOSED**
 
-Remote tfstate remains **NOT MATERIALIZED**. Persistent lock object remains
-**ABSENT**. `tofu plan` / `tofu apply` remain **NOT AUTHORIZED**.
+Remote tfstate is **MATERIALIZED / AUTHORITATIVE** (serial **1**; zero managed
+resources). Current persistent lock object remains **ABSENT**. Native S3 lock
+lifecycle is **VALIDATED**. Bounded Stage 3A plan and Stage 3B saved-plan apply
+are **EXECUTED / CLOSED**. Normal production workload plan and further production
+apply remain **NOT AUTHORIZED**.
 
 ## Legacy bucket
 

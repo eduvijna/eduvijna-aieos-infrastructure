@@ -15,14 +15,19 @@ definitions do **not** live in `eduvijna-aieos-backend` or
 | Architecture frozen | Yes (ADR-AIEOS-037/038R1/039/040R1/041/041R1/042/043/044/044R1/044R2) |
 | Implementation modeled | Yes (Bootstrap AIStor + VPC/project/network) |
 | Production state bucket bootstrap | **COMPLETE** (`eduvijna-aieos-tofu-state-prod-sfo3` / SFO3) |
-| Production remote backend initialized | **Yes** (Stage 2; operator workspace) |
-| Production remote state materialized | **No** |
+| Production remote backend initialized | **Yes** (Stage 2) |
+| Production remote state materialized | **Yes** (Stage 3B) |
+| Authoritative tfstate | **MATERIALIZED** — serial **1** / zero managed resources / `tofu state list` **EMPTY** |
 | Production workload cloud resources created | **No** |
 | Permanent production state credential established | **Yes** (bucket-scoped `readwrite`; outside Git) |
 | Production workload credentials activated | **No** |
 | Production deployed | **No** |
 | PED-I03 activated | **No** |
-| OpenTofu apply authorized | **No** |
+| Further production OpenTofu apply authorized | **NO FURTHER APPLY AUTHORIZED** (Stage 3B bounded refresh-only saved-plan apply executed and closed) |
+
+Stage 3A bounded refresh-only plan and Stage 3B state-only materialization are
+**complete**. Native S3 locking is **validated**. No DigitalOcean workload
+mutation occurred. `enable_cloud_resources` remains **false**.
 
 ## Toolchain
 
@@ -42,7 +47,7 @@ docs/                      # baseline, state, secrets, runbook
 ## Absolute prohibitions (this foundation)
 
 - No DigitalOcean resource mutation from CI or local convenience
-- No `tofu apply` against production without Chief Architect authorization
+- No further `tofu apply` against production without Chief Architect authorization
 - Stage 2 production backend initialization completed in the authorized
   operator workspace. Any new/reconfigured production backend initialization
   in a clean or different workspace still requires an explicit Chief Architect
@@ -68,8 +73,8 @@ Target ≤ USD 240/month service-charge operating target. Hard ceiling
 USD 250/month. GST/statutory taxes (including Indian GST) are tracked separately
 and do **not** consume the USD 250 DigitalOcean service-charge ceiling.
 
-No apply may proceed without a pre-apply commercial calculation covering every
-resource in that apply plus retained estate.
+No billable workload apply may proceed without a pre-apply commercial
+calculation covering every resource in that apply plus retained estate.
 
 ## Docs
 
