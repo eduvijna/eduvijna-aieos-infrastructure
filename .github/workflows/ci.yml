@@ -98,8 +98,11 @@ jobs:
 
       - name: Prove PostgreSQL major version 18
         run: |
-          major="$(psql -Atqc "SELECT split_part(version(), ' ', 2)::int")"
-          test "$major" = "18"
+          version_line="$(psql -Atqc "SELECT version()")"
+          case "$version_line" in
+            PostgreSQL\ 18.*) ;;
+            *) echo "expected PostgreSQL 18.x, got: $version_line" >&2; exit 1 ;;
+          esac
 
       - name: Secret / apply / local-state guards
         run: bash scripts/guard.sh
