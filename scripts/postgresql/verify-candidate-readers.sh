@@ -5,16 +5,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=scripts/postgresql/lib/common.sh
 source "${ROOT}/scripts/postgresql/lib/common.sh"
 
+require_psql_connection
+load_identity_env
+assert_connected_as "$DEPLOYMENT_ADMIN_ROLE"
+
 VERIFY_MODE="${AIEOS_VERIFY_MODE:-baseline}"
 if [[ "$VERIFY_MODE" != "baseline" && "$VERIFY_MODE" != "jit" ]]; then
   fail "AIEOS_VERIFY_MODE must be 'baseline' or 'jit'"
-fi
-
-require_psql_connection
-load_identity_env
-
-if [[ -n "${PGUSER:-}" ]]; then
-  assert_connected_as "$DEPLOYMENT_ADMIN_ROLE"
 fi
 
 verify_deployment_admin_contract
@@ -25,6 +22,9 @@ verify_deployment_admin_baseline_edge "$EVENT_CANDIDATE_READER_ROLE"
 verify_deployment_admin_baseline_edge "$WORKFLOW_CANDIDATE_READER_ROLE"
 assert_set_role_denied "$EVENT_CANDIDATE_READER_ROLE"
 assert_set_role_denied "$WORKFLOW_CANDIDATE_READER_ROLE"
+
+verify_no_outbound_role_memberships "$EVENT_CANDIDATE_READER_ROLE"
+verify_no_outbound_role_memberships "$WORKFLOW_CANDIDATE_READER_ROLE"
 
 verify_no_schema_ownership "$EVENT_CANDIDATE_READER_ROLE"
 verify_no_schema_ownership "$WORKFLOW_CANDIDATE_READER_ROLE"

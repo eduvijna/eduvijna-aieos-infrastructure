@@ -70,6 +70,28 @@ run_as_migrator() {
   PGUSER="$AIEOS_MIGRATOR_ROLE" PGPASSWORD='ci_bootstrap_only' "$@"
 }
 
+assert_no_migrator_jit_membership() {
+  local event_edge workflow_edge
+  event_edge="$(psql_query -c "
+    SELECT COUNT(*)
+    FROM pg_auth_members am
+    JOIN pg_roles granted ON granted.oid = am.roleid
+    JOIN pg_roles member ON member.oid = am.member
+    WHERE granted.rolname = '${AIEOS_EVENT_CANDIDATE_READER_ROLE}'
+      AND member.rolname = '${AIEOS_MIGRATOR_ROLE}'
+  ")"
+  workflow_edge="$(psql_query -c "
+    SELECT COUNT(*)
+    FROM pg_auth_members am
+    JOIN pg_roles granted ON granted.oid = am.roleid
+    JOIN pg_roles member ON member.oid = am.member
+    WHERE granted.rolname = '${AIEOS_WORKFLOW_CANDIDATE_READER_ROLE}'
+      AND member.rolname = '${AIEOS_MIGRATOR_ROLE}'
+  ")"
+  [[ "$event_edge" == "0" ]] || fail "expected no migrator JIT edge for event candidate-reader"
+  [[ "$workflow_edge" == "0" ]] || fail "expected no migrator JIT edge for workflow candidate-reader"
+}
+
 assert_script_fails() {
   local label="$1"
   shift
@@ -95,9 +117,37 @@ assert_script_fails "BYPASSRLS candidate role" run_as_deployment_admin env \
   "${ROOT}/scripts/postgresql/bootstrap-candidate-readers.sh"
 psql_exec -c "DROP ROLE ${AIEOS_WORKFLOW_CANDIDATE_READER_ROLE}_bad"
 
+assert_script_fails "missing libpq connection contract" \
+  env -u PGSERVICE -u PGHOST -u PGDATABASE \
+  PGUSER="$AIEOS_DB_DEPLOYMENT_ADMIN_ROLE" PGPASSWORD='ci_bootstrap_only' \
+  AIEOS_DB_DEPLOYMENT_ADMIN_ROLE="$AIEOS_DB_DEPLOYMENT_ADMIN_ROLE" \
+  AIEOS_EVENT_CANDIDATE_READER_ROLE="$AIEOS_EVENT_CANDIDATE_READER_ROLE" \
+  AIEOS_WORKFLOW_CANDIDATE_READER_ROLE="$AIEOS_WORKFLOW_CANDIDATE_READER_ROLE" \
+  "${ROOT}/scripts/postgresql/bootstrap-candidate-readers.sh"
+
+DEMO_ROLE="aieos_candidate_privilege_demo"
+psql_exec -c "CREATE ROLE ${DEMO_ROLE} NOLOGIN NOBYPASSRLS NOSUPERUSER"
+psql_exec -c "GRANT ${DEMO_ROLE} TO ${AIEOS_EVENT_CANDIDATE_READER_ROLE} WITH INHERIT TRUE"
+assert_script_fails "candidate-reader outbound membership" \
+  run_as_deployment_admin "${ROOT}/scripts/postgresql/verify-candidate-readers.sh"
+psql_exec -c "REVOKE ${DEMO_ROLE} FROM ${AIEOS_EVENT_CANDIDATE_READER_ROLE}"
+psql_exec -c "DROP ROLE ${DEMO_ROLE}"
+AIEOS_VERIFY_MODE=baseline run_as_deployment_admin "${ROOT}/scripts/postgresql/verify-candidate-readers.sh"
+
 run_as_deployment_admin "${ROOT}/scripts/postgresql/grant-candidate-migration-access.sh"
 AIEOS_VERIFY_MODE=jit run_as_deployment_admin "${ROOT}/scripts/postgresql/verify-candidate-readers.sh"
-run_as_migrator psql_exec -c "SET ROLE ${AIEOS_EVENT_CANDIDATE_READER_ROLE}; RESET ROLE;"
+run_as_migrator psql_exec <<SQL
+SET ROLE ${AIEOS_EVENT_CANDIDATE_READER_ROLE};
+SELECT current_user;
+RESET ROLE;
+SQL
+
+run_as_deployment_admin "${ROOT}/scripts/postgresql/revoke-candidate-migration-access.sh"
+assert_no_migrator_jit_membership
+assert_script_fails "jit second-grant transaction rollback" \
+  run_as_deployment_admin env AIEOS_CI_INJECT_JIT_SECOND_GRANT_FAILURE=1 \
+  "${ROOT}/scripts/postgresql/grant-candidate-migration-access.sh"
+assert_no_migrator_jit_membership
 
 # Simulate interrupted deployment: grant again then cleanup.
 run_as_deployment_admin "${ROOT}/scripts/postgresql/grant-candidate-migration-access.sh"

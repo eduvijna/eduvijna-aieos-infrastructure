@@ -93,7 +93,24 @@ Optional verifier inputs (recommended in production verification):
 
 All role names must match `^[a-z_][a-z0-9_]*$`. Missing or invalid values fail closed.
 
-Connection is supplied externally via standard `psql` variables (`PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`) or `DATABASE_URL`. Scripts never echo secrets.
+### libpq connection contract
+
+Scripts use standard `psql` libpq inputs only. **`DATABASE_URL` is not accepted.**
+
+Accepted modes:
+
+| Mode | Requirement |
+| --- | --- |
+| **A. Service file** | `PGSERVICE` is set (`PGUSER` / password may come from the service definition) |
+| **B. Explicit host/database** | both `PGHOST` and `PGDATABASE` are set (`PGPORT` optional; `PGUSER` / `PGPASSWORD` supplied externally) |
+
+Scripts never echo secrets. Role identity is **never** inferred from environment variable names alone; after connection each operational script executes `SELECT current_user` and proves the session equals `AIEOS_DB_DEPLOYMENT_ADMIN_ROLE` where required.
+
+### Candidate-reader outbound membership
+
+Candidate-readers must **not** themselves be members of any other PostgreSQL role (`pg_auth_members.member = candidate_reader`). This is distinct from the accepted administrative edge where deployment admin is a member **of** the candidate-reader for role management (`ADMIN true`, `INHERIT false`, `SET false`).
+
+Outbound membership would allow inherited authority during SECURITY DEFINER execution and is forbidden.
 
 ### Verifier modes
 
@@ -121,9 +138,11 @@ For a separately authorized Backend Alembic migration window:
 3. `revoke-candidate-migration-access.sh` (deployment admin)
 4. `verify-candidate-readers.sh` in `baseline` mode
 
+`grant-candidate-migration-access.sh` performs preflight verification, grants **both** candidate-reader memberships inside **one** PostgreSQL transaction (`BEGIN` / `COMMIT`, `ON_ERROR_STOP`), verifies exact membership triples after commit, and runs best-effort JIT cleanup if post-commit verification fails.
+
 Final persistent state: **no migrator → candidate-reader membership**.
 
-`cleanup-candidate-migration-access.sh` revokes temporary migrator membership only. It does **not** drop candidate-reader roles, application functions, schemas, or RLS objects.
+`cleanup-candidate-migration-access.sh` revokes temporary migrator membership only. It does **not** drop candidate-reader roles, application functions, schemas, or RLS objects. Use cleanup after interrupted deployment or failed post-commit verification recovery.
 
 ## Production execution
 

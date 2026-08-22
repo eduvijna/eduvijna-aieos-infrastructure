@@ -41,9 +41,13 @@ require_env_role() {
 
 require_psql_connection() {
   require_cmd psql
-  if [[ -z "${PGHOST:-}" && -z "${PGDATABASE:-}" && -z "${PGUSER:-}" && -z "${PGSERVICE:-}" && -z "${DATABASE_URL:-}" ]]; then
-    fail "PostgreSQL connection not configured; set PG* variables or DATABASE_URL externally"
+  if [[ -n "${PGSERVICE:-}" ]]; then
+    return 0
   fi
+  if [[ -n "${PGHOST:-}" && -n "${PGDATABASE:-}" ]]; then
+    return 0
+  fi
+  fail "PostgreSQL connection not configured; set PGSERVICE or both PGHOST and PGDATABASE"
 }
 
 psql_exec() {
@@ -71,7 +75,7 @@ assert_connected_as() {
   local current
   current="$(psql_query -c "SELECT current_user")"
   if [[ "$current" != "$expected" ]]; then
-    fail "connected as '${current}' but expected '${expected}' (set PGUSER to deployment admin identity)"
+    fail "connected as '${current}' but expected '${expected}' (set PGUSER or PGSERVICE to deployment admin identity)"
   fi
 }
 
@@ -145,25 +149,62 @@ verify_membership_absent() {
   fi
 }
 
+membership_matches_exact() {
+  local granted_role="$1"
+  local member_role="$2"
+  local expect_admin="$3"
+  local expect_inherit="$4"
+  local expect_set="$5"
+  local row admin inherit set
+
+  row="$(membership_options "$granted_role" "$member_role")"
+  [[ -n "$row" ]] || return 1
+  IFS='|' read -r admin inherit set <<<"$row"
+  [[ "$admin" == "$expect_admin" && "$inherit" == "$expect_inherit" && "$set" == "$expect_set" ]]
+}
+
 verify_membership_options() {
   local granted_role="$1"
   local member_role="$2"
   local expect_admin="$3"
   local expect_inherit="$4"
   local expect_set="$5"
-  local row
-  row="$(membership_options "$granted_role" "$member_role")"
-  [[ -n "$row" ]] || fail "expected membership missing: ${member_role} -> ${granted_role}"
-
-  IFS='|' read -r admin inherit set <<<"$row"
-  [[ "$admin" == "$expect_admin" ]] || fail "membership ${member_role}->${granted_role} admin_option=${admin}, expected ${expect_admin}"
-  [[ "$inherit" == "$expect_inherit" ]] || fail "membership ${member_role}->${granted_role} inherit_option=${inherit}, expected ${expect_inherit}"
-  [[ "$set" == "$expect_set" ]] || fail "membership ${member_role}->${granted_role} set_option=${set}, expected ${expect_set}"
+  membership_matches_exact "$granted_role" "$member_role" "$expect_admin" "$expect_inherit" "$expect_set" \
+    || fail "membership ${member_role}->${granted_role} options do not match expected ${expect_admin}/${expect_inherit}/${expect_set}"
 }
 
 verify_deployment_admin_baseline_edge() {
   local candidate_role="$1"
   verify_membership_options "$candidate_role" "$DEPLOYMENT_ADMIN_ROLE" "true" "false" "false"
+}
+
+verify_jit_migrator_membership_absent_or_exact() {
+  local candidate_role="$1"
+  if has_membership "$candidate_role" "$MIGRATOR_ROLE"; then
+    verify_membership_options "$candidate_role" "$MIGRATOR_ROLE" "false" "false" "true"
+  fi
+}
+
+verify_no_outbound_role_memberships() {
+  local candidate_role="$1"
+  local outbound_count
+  outbound_count="$(psql_query -c "
+      SELECT COUNT(*)
+      FROM pg_auth_members am
+      JOIN pg_roles member ON member.oid = am.member
+      WHERE member.rolname = $(sql_role_literal "$candidate_role")
+    ")"
+  [[ "$outbound_count" == "0" ]] || fail "candidate-reader ${candidate_role} must not be a member of any other role"
+}
+
+jit_membership_already_exact() {
+  has_membership "$EVENT_CANDIDATE_READER_ROLE" "$MIGRATOR_ROLE" \
+    && has_membership "$WORKFLOW_CANDIDATE_READER_ROLE" "$MIGRATOR_ROLE"
+}
+
+verify_jit_migrator_memberships_exact() {
+  membership_matches_exact "$EVENT_CANDIDATE_READER_ROLE" "$MIGRATOR_ROLE" "false" "false" "true" \
+    && membership_matches_exact "$WORKFLOW_CANDIDATE_READER_ROLE" "$MIGRATOR_ROLE" "false" "false" "true"
 }
 
 assert_set_role_denied() {
@@ -172,12 +213,6 @@ assert_set_role_denied() {
     psql_exec -c "RESET ROLE" >/dev/null 2>&1 || true
     fail "SET ROLE ${target_role} succeeded but must be denied for deployment admin baseline edge"
   fi
-}
-
-assert_set_role_allowed() {
-  local target_role="$1"
-  psql_exec -c "SET ROLE ${target_role}"
-  psql_exec -c "RESET ROLE"
 }
 
 verify_deployment_admin_contract() {
